@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Text Chat Implementation with OpenAI Integration
+# Status: pending
+# Dependencies: 3
+# Priority: medium
+# Description: Implement the text chat functionality using OpenAI's GPT-4.1-nano model with streaming responses.
+# Details:
+Integrate OpenAI's API for text generation. Use the streaming API to display responses in real-time. Implement server components in NextJS to handle API requests and responses.
+
+# Test Strategy:
+Test the chat functionality by sending messages and verifying real-time streaming of AI responses.

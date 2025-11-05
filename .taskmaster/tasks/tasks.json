@@ -1,0 +1,143 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Project Setup with NextJS and TailwindCSS",
+        "description": "Initialize the project with NextJS and integrate TailwindCSS for styling.",
+        "details": "Set up a new NextJS project using the App Directory structure. Integrate TailwindCSS for styling by following the official TailwindCSS setup guide for NextJS. Ensure ShadUI components are available for use.",
+        "testStrategy": "Verify the project builds successfully and TailwindCSS styles are applied correctly to a sample component.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Supabase Local Setup and Database Schema",
+        "description": "Set up a local instance of Supabase and define the initial database schema for chat messages and sessions.",
+        "details": "Install Supabase CLI and initialize a local instance. Create tables for 'Chat Message' and 'Chat Session' as per the data models provided in the PRD. Use SQL migrations to manage schema changes.",
+        "testStrategy": "Run Supabase locally and ensure tables are created correctly. Test basic CRUD operations on the tables.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Basic UI Layout and Components",
+        "description": "Develop the basic UI layout using React components and TailwindCSS.",
+        "details": "Create React components for the chat interface, including input areas, message display, and mode toggle. Use TailwindCSS for styling and ensure components are responsive.",
+        "testStrategy": "Render the UI components in a browser and verify layout and responsiveness across different screen sizes.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Text Chat Implementation with OpenAI Integration",
+        "description": "Implement the text chat functionality using OpenAI's GPT-4.1-nano model with streaming responses.",
+        "details": "Integrate OpenAI's API for text generation. Use the streaming API to display responses in real-time. Implement server components in NextJS to handle API requests and responses.",
+        "testStrategy": "Test the chat functionality by sending messages and verifying real-time streaming of AI responses.",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Streaming Response Rendering",
+        "description": "Render AI responses in real-time as they are received from the OpenAI API.",
+        "details": "Use React state management to update the UI with incoming tokens from the OpenAI streaming API. Ensure smooth and continuous display of text as it is generated.",
+        "testStrategy": "Simulate various response lengths and verify that the text streams smoothly without delays or interruptions.",
+        "priority": "medium",
+        "dependencies": [
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Supabase Database Integration for Message Storage",
+        "description": "Integrate Supabase to store chat messages and sessions.",
+        "details": "Implement API calls to store and retrieve chat messages and sessions in Supabase. Ensure that each message is stored with the correct metadata as defined in the data models.",
+        "testStrategy": "Verify that messages are correctly stored and retrieved from the database. Check data integrity and consistency.",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Image Generation Mode with Toggle",
+        "description": "Add the ability to switch between text chat and image generation modes using OpenAI's gpt-image-1 model.",
+        "details": "Implement a UI toggle to switch modes. Integrate OpenAI's image generation API and handle requests and responses for image generation. Display generated images in the chat interface.",
+        "testStrategy": "Test the mode toggle functionality and verify that images are generated and displayed correctly when in image mode.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "New Chat Functionality",
+        "description": "Implement the 'New Chat' feature to start fresh conversations and store previous chats.",
+        "details": "Add functionality to clear the current chat and reset the interface. Store previous chat sessions in Supabase with appropriate metadata.",
+        "testStrategy": "Test the 'New Chat' button to ensure it clears the interface and stores the previous session correctly.",
+        "priority": "medium",
+        "dependencies": [
+          6
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Error Handling and Feedback Mechanisms",
+        "description": "Implement error handling and user feedback for API interactions and UI operations.",
+        "details": "Add error handling for API rate limits and network issues. Provide user feedback through UI notifications or alerts when errors occur.",
+        "testStrategy": "Simulate API errors and verify that appropriate error messages are displayed to the user.",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "UI Enhancements and Cross-Browser Compatibility",
+        "description": "Enhance the UI for improved styling and ensure compatibility across different browsers.",
+        "details": "Refine UI components for better aesthetics and usability. Test the application on major browsers to ensure consistent behavior and appearance.",
+        "testStrategy": "Conduct cross-browser testing on Chrome, Firefox, and Safari to verify consistent UI and functionality.",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-11-05T08:21:50.422Z",
+      "updated": "2025-11-05T08:45:03.497Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

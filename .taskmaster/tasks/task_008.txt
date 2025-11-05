@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: New Chat Functionality
+# Status: pending
+# Dependencies: 6
+# Priority: medium
+# Description: Implement the 'New Chat' feature to start fresh conversations and store previous chats.
+# Details:
+Add functionality to clear the current chat and reset the interface. Store previous chat sessions in Supabase with appropriate metadata.
+
+# Test Strategy:
+Test the 'New Chat' button to ensure it clears the interface and stores the previous session correctly.

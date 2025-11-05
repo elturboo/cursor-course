@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Project Setup with NextJS and TailwindCSS
+# Status: pending
+# Dependencies: None
+# Priority: medium
+# Description: Initialize the project with NextJS and integrate TailwindCSS for styling.
+# Details:
+Set up a new NextJS project using the App Directory structure. Integrate TailwindCSS for styling by following the official TailwindCSS setup guide for NextJS. Ensure ShadUI components are available for use.
+
+# Test Strategy:
+Verify the project builds successfully and TailwindCSS styles are applied correctly to a sample component.

@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Image Generation Mode with Toggle
+# Status: pending
+# Dependencies: 3, 4
+# Priority: medium
+# Description: Add the ability to switch between text chat and image generation modes using OpenAI's gpt-image-1 model.
+# Details:
+Implement a UI toggle to switch modes. Integrate OpenAI's image generation API and handle requests and responses for image generation. Display generated images in the chat interface.
+
+# Test Strategy:
+Test the mode toggle functionality and verify that images are generated and displayed correctly when in image mode.

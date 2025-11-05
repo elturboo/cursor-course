@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Supabase Local Setup and Database Schema
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Set up a local instance of Supabase and define the initial database schema for chat messages and sessions.
+# Details:
+Install Supabase CLI and initialize a local instance. Create tables for 'Chat Message' and 'Chat Session' as per the data models provided in the PRD. Use SQL migrations to manage schema changes.
+
+# Test Strategy:
+Run Supabase locally and ensure tables are created correctly. Test basic CRUD operations on the tables.
