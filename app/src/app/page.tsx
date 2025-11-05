@@ -99,7 +99,9 @@ export default function ChatDemoPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <ModeToggle mode={mode} onModeChange={setMode} />
-          <NewChatButton onClick={handleNewChat} />
+          <NewChatButton onClick={handleNewChat} disabled={
+            isLoading || messages.length === 0
+          } />
         </div>
       </header>
 
