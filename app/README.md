@@ -5,15 +5,23 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ### Prerequisites
 
 1. **Set up environment variables:**
-   - Copy `.env.example` to `.env.local`:
+   - Create a `.env.local` file in the `app` directory:
      ```bash
-     cp .env.example .env.local
+     touch .env.local
      ```
    - Add your OpenAI API key to `.env.local`:
      ```
      OPENAI_API_KEY=your_openai_api_key_here
      ```
    - Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+   
+   **Development Mode (Static Replies):**
+   - To avoid using the OpenAI API during development (saves costs), add this to `.env.local`:
+     ```
+     USE_STATIC_REPLY=true
+     ```
+   - When `USE_STATIC_REPLY=true`, the app will use static responses instead of calling the OpenAI API
+   - Set `USE_STATIC_REPLY=false` or remove it to use the real OpenAI API
 
 ### Running the Development Server
 
