@@ -1,145 +1,28 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import { ChatMessage } from "@/components/chat/ChatMessage";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { ModeToggle } from "@/components/chat/ModeToggle";
 import { NewChatButton } from "@/components/chat/NewChatButton";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Loader2 } from "lucide-react";
-
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  imageUrl?: string;
-  timestamp: Date;
-}
-
-type ChatMode = "text" | "image";
+import { useChat } from "@/hooks/useChat";
+import { getInputPlaceholder, getWelcomeMessage } from "@/utils/chatUtils";
 
 export default function ChatDemoPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [mode, setMode] = useState<ChatMode>("text");
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const {
+    messages,
+    mode,
+    isLoading,
+    streamingContent,
+    setMode,
+    sendMessage,
+    newChat,
+    scrollRef,
+  } = useChat();
 
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, streamingContent]);
-
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim() || isLoading) return;
-
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content,
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-    setStreamingContent("");
-
-    try {
-      if (mode === "text") {
-        // Prepare messages for OpenAI API
-        const apiMessages = [
-          ...messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          { role: "user" as const, content },
-        ];
-
-        // Call the streaming API
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ messages: apiMessages }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error || `HTTP error! status: ${response.status}`
-          );
-        }
-
-        // Handle streaming response
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedContent = "";
-
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value, { stream: true });
-            accumulatedContent += chunk;
-            setStreamingContent(accumulatedContent);
-          }
-        }
-
-        // Save the final message
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: accumulatedContent,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-        setStreamingContent("");
-        setIsLoading(false);
-      } else {
-        // TODO: Implement image generation
-        // For now, add a placeholder response
-        setTimeout(() => {
-          const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: "Image generation will be implemented next.",
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, assistantMessage]);
-          setIsLoading(false);
-        }, 1500);
-      }
-    } catch (error) {
-      console.error("Error sending message:", error);
-      setStreamingContent("");
-      setIsLoading(false);
-
-      // Add error message to chat
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: `Error: ${error instanceof Error ? error.message : "Failed to send message"}`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    }
-  };
-
-  const handleNewChat = () => {
-    setMessages([]);
-    setStreamingContent("");
-    setIsLoading(false);
-  };
-
-  const inputPlaceholder =
-    mode === "text"
-      ? "Type your message..."
-      : "Describe the image you want to generate...";
+  const inputPlaceholder = getInputPlaceholder(mode);
+  const { title, description } = getWelcomeMessage(mode);
 
   return (
     <div className="flex h-screen flex-col bg-background max-w-screen-lg mx-auto">
@@ -151,7 +34,7 @@ export default function ChatDemoPage() {
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <ModeToggle mode={mode} onModeChange={setMode} />
-          <NewChatButton onClick={handleNewChat} disabled={
+          <NewChatButton onClick={newChat} disabled={
             isLoading || messages.length === 0
           } />
         </div>
@@ -164,13 +47,9 @@ export default function ChatDemoPage() {
             <div className="flex flex-1 items-center justify-center">
               <div className="text-center">
                 <h2 className="mb-2 text-2xl font-semibold text-foreground">
-                  Welcome to Chat App
+                  {title}
                 </h2>
-                <p className="text-muted-foreground">
-                  {mode === "text"
-                    ? "Start a conversation by typing a message below."
-                    : "Describe an image you'd like to generate."}
-                </p>
+                <p className="text-muted-foreground">{description}</p>
               </div>
             </div>
           )}
@@ -207,7 +86,7 @@ export default function ChatDemoPage() {
 
       {/* Input Area */}
       <ChatInput
-        onSend={handleSendMessage}
+        onSend={sendMessage}
         disabled={isLoading}
         placeholder={inputPlaceholder}
       />
