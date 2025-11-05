@@ -5,6 +5,7 @@ import { ChatInput } from "@/components/chat/ChatInput";
 import { ModeToggle } from "@/components/chat/ModeToggle";
 import { NewChatButton } from "@/components/chat/NewChatButton";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Loader2 } from "lucide-react";
 
 interface Message {
   id: string;
@@ -43,21 +44,62 @@ export default function ChatDemoPage() {
 
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setStreamingContent("");
 
     try {
       if (mode === "text") {
-        // TODO: Implement streaming text response
-        // For now, add a placeholder response
-        setTimeout(() => {
-          const assistantMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: "This is a placeholder response. Streaming functionality will be implemented next.",
-            timestamp: new Date(),
-          };
-          setMessages((prev) => [...prev, assistantMessage]);
-          setIsLoading(false);
-        }, 1000);
+        // Prepare messages for OpenAI API
+        const apiMessages = [
+          ...messages.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          { role: "user" as const, content },
+        ];
+
+        // Call the streaming API
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ messages: apiMessages }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.error || `HTTP error! status: ${response.status}`
+          );
+        }
+
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedContent = "";
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            accumulatedContent += chunk;
+            setStreamingContent(accumulatedContent);
+          }
+        }
+
+        // Save the final message
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: accumulatedContent,
+          timestamp: new Date(),
+        };
+
+        setMessages((prev) => [...prev, assistantMessage]);
+        setStreamingContent("");
+        setIsLoading(false);
       } else {
         // TODO: Implement image generation
         // For now, add a placeholder response
@@ -74,7 +116,17 @@ export default function ChatDemoPage() {
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      setStreamingContent("");
       setIsLoading(false);
+
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `Error: ${error instanceof Error ? error.message : "Failed to send message"}`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     }
   };
 
@@ -136,6 +188,19 @@ export default function ChatDemoPage() {
               content={streamingContent}
               isStreaming={true}
             />
+          )}
+          {isLoading && !streamingContent && (
+            <div className="flex w-full gap-3 px-4 py-4 justify-start">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
+                AI
+              </div>
+              <div className="flex max-w-[80%] flex-col gap-2 rounded-lg px-4 py-3 bg-muted text-foreground">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Thinking...</span>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
