@@ -88,12 +88,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=ey...
 npx supabase functions serve --import-map ./supabase/functions/import_map.json
 ```
 
-7.  Call the `hello-world` edge function.
+7.  Test the `chat` edge function.
 ```
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/hello-world' \
-    --header 'Authorization: Bearer SUPABASE_ANON_KEY' \
+  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/chat' \
+    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
     --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
+    --data '{"messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 
