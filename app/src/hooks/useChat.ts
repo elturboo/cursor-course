@@ -14,7 +14,7 @@ interface UseChatReturn {
   setMode: (mode: ChatMode) => void;
   sendMessage: (content: string) => Promise<void>;
   newChat: () => void;
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function useChat(options: UseChatOptions = {}): UseChatReturn {
@@ -106,19 +106,22 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   /**
    * Handles image mode chat (placeholder for future implementation)
    */
-  const handleImageMode = useCallback(async (content: string) => {
-    // TODO: Implement image generation
-    // For now, add a placeholder response
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const assistantMessage = createAssistantMessage(
-          "Image generation will be implemented next."
-        );
-        setMessages((prev) => [...prev, assistantMessage]);
-        resolve();
-      }, 1500);
-    });
-  }, [createAssistantMessage]);
+  const handleImageMode = useCallback(
+    async (content: string) => {
+      // TODO: Implement image generation
+      // For now, add a placeholder response
+      return new Promise<void>((resolve) => {
+        setTimeout(() => {
+          const assistantMessage = createAssistantMessage(
+            "Image generation will be implemented next."
+          );
+          setMessages((prev) => [...prev, assistantMessage]);
+          resolve();
+        }, 1500);
+      });
+    },
+    [createAssistantMessage]
+  );
 
   /**
    * Sends a message based on the current mode
@@ -144,9 +147,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         setStreamingContent("");
 
         const errorMessage = createErrorMessage(
-          error instanceof Error
-            ? error
-            : new Error("Failed to send message")
+          error instanceof Error ? error : new Error("Failed to send message")
         );
         setMessages((prev) => [...prev, errorMessage]);
 
@@ -188,4 +189,3 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     scrollRef,
   };
 }
-
