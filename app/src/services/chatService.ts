@@ -5,7 +5,25 @@ export interface ChatResponse {
 }
 
 export class ChatService {
-  private static readonly CHAT_API_ENDPOINT = "/api/chat";
+  // Construct Edge Function endpoint from Supabase URL
+  private static getChatEndpoint(): string {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+    }
+    return `${supabaseUrl}/functions/v1/chat`;
+  }
+
+  // Get Supabase anon key for local development
+  // For production, this should be stored securely
+  private static getAnonKey(): string {
+    // Local development anon key (from Supabase local instance)
+    // In production, use NEXT_PUBLIC_SUPABASE_ANON_KEY env variable
+    return (
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+    );
+  }
 
   /**
    * Sends a chat message and returns a streaming response
@@ -13,10 +31,11 @@ export class ChatService {
   static async sendMessage(
     messages: ApiMessage[]
   ): Promise<ReadableStream<Uint8Array>> {
-    const response = await fetch(this.CHAT_API_ENDPOINT, {
+    const response = await fetch(this.getChatEndpoint(), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${this.getAnonKey()}`,
       },
       body: JSON.stringify({ messages }),
     });
@@ -62,4 +81,3 @@ export class ChatService {
     return accumulatedContent;
   }
 }
-
