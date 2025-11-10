@@ -80,4 +80,37 @@ export class ChatService {
 
     return accumulatedContent;
   }
+
+  /**
+   * Generates an image from a text prompt
+   */
+  static async generateImage(prompt: string): Promise<string> {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.getAnonKey()}`,
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+    if (!data.imageUrl) {
+      throw new Error("No image URL returned from API");
+    }
+
+    return data.imageUrl;
+  }
 }

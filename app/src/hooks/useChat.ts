@@ -46,14 +46,18 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   /**
    * Creates a new assistant message
    */
-  const createAssistantMessage = useCallback((content: string): Message => {
-    return {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content,
-      timestamp: new Date(),
-    };
-  }, []);
+  const createAssistantMessage = useCallback(
+    (content: string, imageUrl?: string): Message => {
+      return {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content,
+        imageUrl,
+        timestamp: new Date(),
+      };
+    },
+    []
+  );
 
   /**
    * Creates an error message
@@ -104,21 +108,24 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   );
 
   /**
-   * Handles image mode chat (placeholder for future implementation)
+   * Handles image mode chat - generates images from text prompts
    */
   const handleImageMode = useCallback(
     async (content: string) => {
-      // TODO: Implement image generation
-      // For now, add a placeholder response
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          const assistantMessage = createAssistantMessage(
-            "Image generation will be implemented next."
-          );
-          setMessages((prev) => [...prev, assistantMessage]);
-          resolve();
-        }, 1500);
-      });
+      try {
+        // Generate image using the chat service
+        const imageUrl = await ChatService.generateImage(content);
+
+        // Create assistant message with the generated image
+        const assistantMessage = createAssistantMessage(
+          `Generated image for: "${content}"`,
+          imageUrl
+        );
+        setMessages((prev) => [...prev, assistantMessage]);
+      } catch (error) {
+        console.error("Image generation error:", error);
+        throw error; // Re-throw to be handled by sendMessage's error handler
+      }
     },
     [createAssistantMessage]
   );
