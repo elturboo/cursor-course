@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
         size: "1024x1024",
       });
 
-      const imageUrl = result.data[0]?.url;
+      const imageUrl = result.data?.[0]?.url;
       if (!imageUrl) {
         throw new Error("No image URL returned from OpenAI");
       }
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
             size: "1024x1024",
           });
 
-          const imageUrl = fallbackResult.data[0]?.url;
+          const imageUrl = fallbackResult?.data?.[0]?.url;
           if (!imageUrl) {
             throw new Error("No image URL returned from OpenAI");
           }
