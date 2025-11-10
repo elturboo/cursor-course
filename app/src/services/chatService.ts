@@ -14,15 +14,14 @@ export class ChatService {
     return `${supabaseUrl}/functions/v1/chat`;
   }
 
-  // Get Supabase anon key for local development
-  // For production, this should be stored securely
+  // Get Supabase anon key from environment variables
+  // Never hardcode API keys in frontend code
   private static getAnonKey(): string {
-    // Local development anon key (from Supabase local instance)
-    // In production, use NEXT_PUBLIC_SUPABASE_ANON_KEY env variable
-    return (
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
-    );
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!anonKey) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured");
+    }
+    return anonKey;
   }
 
   /**
@@ -41,10 +40,18 @@ export class ChatService {
     });
 
     if (!response.ok) {
+      // Don't expose detailed error information to users
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
-      );
+      // Only expose generic error messages to prevent information leakage
+      const errorMessage =
+        response.status === 401
+          ? "Authentication failed. Please try again."
+          : response.status === 403
+          ? "Access denied."
+          : response.status >= 500
+          ? "Server error. Please try again later."
+          : errorData.error || "Failed to send message. Please try again.";
+      throw new Error(errorMessage);
     }
 
     if (!response.body) {
@@ -100,10 +107,18 @@ export class ChatService {
     });
 
     if (!response.ok) {
+      // Don't expose detailed error information to users
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `HTTP error! status: ${response.status}`
-      );
+      // Only expose generic error messages to prevent information leakage
+      const errorMessage =
+        response.status === 401
+          ? "Authentication failed. Please try again."
+          : response.status === 403
+          ? "Access denied."
+          : response.status >= 500
+          ? "Server error. Please try again later."
+          : errorData.error || "Failed to generate image. Please try again.";
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();

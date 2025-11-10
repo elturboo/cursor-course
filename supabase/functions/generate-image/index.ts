@@ -10,16 +10,37 @@ import OpenAI from "openai";
 declare const Deno: typeof globalThis.Deno;
 
 // CORS headers for cross-origin requests
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+// In production, replace "*" with your specific frontend domain
+const getAllowedOrigin = (): string => {
+  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+  // For local development, allow localhost
+  // In production, this should be your actual domain
+  if (allowedOrigin) {
+    return allowedOrigin;
+  }
+  // Default to localhost for local development
+  return "http://localhost:3000";
+};
+
+const corsHeaders = (origin: string) => ({
+  "Access-Control-Allow-Origin": origin,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-};
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400", // 24 hours
+});
 
 // Handle CORS preflight requests
 function handleCors(req: Request): Response | null {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    const origin = req.headers.get("origin") || getAllowedOrigin();
+    const allowedOrigin = getAllowedOrigin();
+    // Only allow requests from allowed origin
+    const originToUse =
+      origin === allowedOrigin || origin.includes("localhost")
+        ? origin
+        : allowedOrigin;
+    return new Response("ok", { headers: corsHeaders(originToUse) });
   }
   return null;
 }
@@ -60,17 +81,53 @@ Deno.serve(async (req) => {
 
     // Validate prompt
     const { prompt } = body;
+    const MAX_PROMPT_LENGTH = 1000; // Limit prompt length
+
     if (!prompt || typeof prompt !== "string" || prompt.trim().length === 0) {
+      const origin = req.headers.get("origin") || getAllowedOrigin();
+      const allowedOrigin = getAllowedOrigin();
+      const originToUse =
+        origin === allowedOrigin || origin.includes("localhost")
+          ? origin
+          : allowedOrigin;
       return new Response(
         JSON.stringify({
           error: "Prompt is required and must be a non-empty string",
         }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders(originToUse),
+            "Content-Type": "application/json",
+          },
         }
       );
     }
+
+    // Validate prompt length
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      const origin = req.headers.get("origin") || getAllowedOrigin();
+      const allowedOrigin = getAllowedOrigin();
+      const originToUse =
+        origin === allowedOrigin || origin.includes("localhost")
+          ? origin
+          : allowedOrigin;
+      return new Response(
+        JSON.stringify({
+          error: "Prompt is too long. Maximum length is 1000 characters.",
+        }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders(originToUse),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Sanitize prompt
+    const sanitizedPrompt = prompt.trim().slice(0, MAX_PROMPT_LENGTH);
 
     // Check for OpenAI API key
     const apiKey = Deno.env.get("OPENAI_API_KEY");
@@ -93,7 +150,7 @@ Deno.serve(async (req) => {
     try {
       const result = await openai.images.generate({
         model: "gpt-image-1",
-        prompt: prompt.trim(),
+        prompt: sanitizedPrompt,
         n: 1,
         size: "1024x1024",
       });
@@ -103,14 +160,26 @@ Deno.serve(async (req) => {
         throw new Error("No image URL returned from OpenAI");
       }
 
+      const origin = req.headers.get("origin") || getAllowedOrigin();
+      const allowedOrigin = getAllowedOrigin();
+      const originToUse =
+        origin === allowedOrigin || origin.includes("localhost")
+          ? origin
+          : allowedOrigin;
+
       return new Response(
         JSON.stringify({
           imageUrl,
-          prompt: prompt.trim(),
+          prompt: sanitizedPrompt,
         }),
         {
           status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders(originToUse),
+            "Content-Type": "application/json",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+          },
         }
       );
     } catch (imageError: any) {
@@ -126,7 +195,7 @@ Deno.serve(async (req) => {
         try {
           const fallbackResult = await openai.images.generate({
             model: "dall-e-3",
-            prompt: prompt.trim(),
+            prompt: sanitizedPrompt,
             n: 1,
             size: "1024x1024",
           });
@@ -136,14 +205,26 @@ Deno.serve(async (req) => {
             throw new Error("No image URL returned from OpenAI");
           }
 
+          const origin = req.headers.get("origin") || getAllowedOrigin();
+          const allowedOrigin = getAllowedOrigin();
+          const originToUse =
+            origin === allowedOrigin || origin.includes("localhost")
+              ? origin
+              : allowedOrigin;
+
           return new Response(
             JSON.stringify({
               imageUrl,
-              prompt: prompt.trim(),
+              prompt: sanitizedPrompt,
             }),
             {
               status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: {
+                ...corsHeaders(originToUse),
+                "Content-Type": "application/json",
+                "X-Content-Type-Options": "nosniff",
+                "X-Frame-Options": "DENY",
+              },
             }
           );
         } catch (fallbackError) {
@@ -154,15 +235,29 @@ Deno.serve(async (req) => {
       }
     }
   } catch (error) {
+    // Log full error details server-side only
     console.error("Generate image API error:", error);
+
+    // Don't expose internal error details to clients
+    const origin = req.headers.get("origin") || getAllowedOrigin();
+    const allowedOrigin = getAllowedOrigin();
+    const originToUse =
+      origin === allowedOrigin || origin.includes("localhost")
+        ? origin
+        : allowedOrigin;
+
     return new Response(
       JSON.stringify({
         error: "Failed to generate image",
-        details: error instanceof Error ? error.message : String(error),
+        // Don't expose error details in production
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders(originToUse),
+          "Content-Type": "application/json",
+          "X-Content-Type-Options": "nosniff",
+        },
       }
     );
   }

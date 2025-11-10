@@ -18,8 +18,17 @@ export function ChatInput({
   const [input, setInput] = useState("");
 
   const handleSubmit = () => {
-    if (input.trim() && !disabled) {
-      onSend(input.trim());
+    // Validate input length before sending
+    const trimmedInput = input.trim();
+    const MAX_INPUT_LENGTH = 10000; // Match backend validation
+    
+    if (trimmedInput && !disabled) {
+      if (trimmedInput.length > MAX_INPUT_LENGTH) {
+        // Show user-friendly error
+        alert(`Message is too long. Maximum length is ${MAX_INPUT_LENGTH} characters.`);
+        return;
+      }
+      onSend(trimmedInput);
       setInput("");
     }
   };

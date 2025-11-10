@@ -10,16 +10,37 @@ import OpenAI from "openai";
 declare const Deno: typeof globalThis.Deno;
 
 // CORS headers for cross-origin requests
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+// In production, replace "*" with your specific frontend domain
+const getAllowedOrigin = (): string => {
+  const allowedOrigin = Deno.env.get("ALLOWED_ORIGIN");
+  // For local development, allow localhost
+  // In production, this should be your actual domain
+  if (allowedOrigin) {
+    return allowedOrigin;
+  }
+  // Default to localhost for local development
+  return "http://localhost:3000";
+};
+
+const corsHeaders = (origin: string) => ({
+  "Access-Control-Allow-Origin": origin,
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-};
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400", // 24 hours
+});
 
 // Handle CORS preflight requests
 function handleCors(req: Request): Response | null {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    const origin = req.headers.get("origin") || getAllowedOrigin();
+    const allowedOrigin = getAllowedOrigin();
+    // Only allow requests from allowed origin
+    const originToUse =
+      origin === allowedOrigin || origin.includes("localhost")
+        ? origin
+        : allowedOrigin;
+    return new Response("ok", { headers: corsHeaders(originToUse) });
   }
   return null;
 }
@@ -61,13 +82,103 @@ Deno.serve(async (req) => {
     // Validate messages array
     const { messages } = body;
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      const origin = req.headers.get("origin") || getAllowedOrigin();
+      const allowedOrigin = getAllowedOrigin();
+      const originToUse =
+        origin === allowedOrigin || origin.includes("localhost")
+          ? origin
+          : allowedOrigin;
       return new Response(
         JSON.stringify({ error: "Messages array is required" }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders(originToUse),
+            "Content-Type": "application/json",
+          },
         }
       );
+    }
+
+    // Validate message structure and content
+    const MAX_MESSAGE_LENGTH = 10000; // Limit message length
+    const MAX_MESSAGES = 50; // Limit conversation history
+
+    if (messages.length > MAX_MESSAGES) {
+      const origin = req.headers.get("origin") || getAllowedOrigin();
+      const allowedOrigin = getAllowedOrigin();
+      const originToUse =
+        origin === allowedOrigin || origin.includes("localhost")
+          ? origin
+          : allowedOrigin;
+      return new Response(
+        JSON.stringify({ error: "Too many messages in conversation" }),
+        {
+          status: 400,
+          headers: {
+            ...corsHeaders(originToUse),
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    // Validate each message
+    for (const msg of messages) {
+      if (!msg.role || !msg.content || typeof msg.content !== "string") {
+        const origin = req.headers.get("origin") || getAllowedOrigin();
+        const allowedOrigin = getAllowedOrigin();
+        const originToUse =
+          origin === allowedOrigin || origin.includes("localhost")
+            ? origin
+            : allowedOrigin;
+        return new Response(
+          JSON.stringify({ error: "Invalid message format" }),
+          {
+            status: 400,
+            headers: {
+              ...corsHeaders(originToUse),
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      if (msg.content.length > MAX_MESSAGE_LENGTH) {
+        const origin = req.headers.get("origin") || getAllowedOrigin();
+        const allowedOrigin = getAllowedOrigin();
+        const originToUse =
+          origin === allowedOrigin || origin.includes("localhost")
+            ? origin
+            : allowedOrigin;
+        return new Response(
+          JSON.stringify({ error: "Message content too long" }),
+          {
+            status: 400,
+            headers: {
+              ...corsHeaders(originToUse),
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
+      // Validate role
+      if (!["user", "assistant", "system"].includes(msg.role)) {
+        const origin = req.headers.get("origin") || getAllowedOrigin();
+        const allowedOrigin = getAllowedOrigin();
+        const originToUse =
+          origin === allowedOrigin || origin.includes("localhost")
+            ? origin
+            : allowedOrigin;
+        return new Response(JSON.stringify({ error: "Invalid message role" }), {
+          status: 400,
+          headers: {
+            ...corsHeaders(originToUse),
+            "Content-Type": "application/json",
+          },
+        });
+      }
     }
 
     // Check for OpenAI API key
@@ -91,15 +202,21 @@ Deno.serve(async (req) => {
     const preferredModel = "gpt-5-nano";
     const fallbackModel = "gpt-4o-mini";
 
+    // Sanitize messages before sending to OpenAI
+    const sanitizedMessages = messages.map(
+      (msg: { role: string; content: string }) => ({
+        role: msg.role as "user" | "assistant" | "system",
+        // Trim and limit content length
+        content: String(msg.content).trim().slice(0, MAX_MESSAGE_LENGTH),
+      })
+    );
+
     // Create streaming response
     let stream;
     try {
       stream = await openai.chat.completions.create({
         model: preferredModel,
-        messages: messages.map((msg: { role: string; content: string }) => ({
-          role: msg.role as "user" | "assistant" | "system",
-          content: msg.content,
-        })),
+        messages: sanitizedMessages,
         stream: true,
       });
     } catch (modelError: any) {
@@ -113,10 +230,7 @@ Deno.serve(async (req) => {
         );
         stream = await openai.chat.completions.create({
           model: fallbackModel,
-          messages: messages.map((msg: { role: string; content: string }) => ({
-            role: msg.role as "user" | "assistant" | "system",
-            content: msg.content,
-          })),
+          messages: sanitizedMessages,
           stream: true,
         });
       } else {
@@ -143,24 +257,47 @@ Deno.serve(async (req) => {
       },
     });
 
+    const origin = req.headers.get("origin") || getAllowedOrigin();
+    const allowedOrigin = getAllowedOrigin();
+    const originToUse =
+      origin === allowedOrigin || origin.includes("localhost")
+        ? origin
+        : allowedOrigin;
+
     return new Response(readableStream, {
       headers: {
-        ...corsHeaders,
+        ...corsHeaders(originToUse),
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
       },
     });
   } catch (error) {
+    // Log full error details server-side only
     console.error("Chat API error:", error);
+
+    // Don't expose internal error details to clients
+    const origin = req.headers.get("origin") || getAllowedOrigin();
+    const allowedOrigin = getAllowedOrigin();
+    const originToUse =
+      origin === allowedOrigin || origin.includes("localhost")
+        ? origin
+        : allowedOrigin;
+
     return new Response(
       JSON.stringify({
         error: "Failed to process chat request",
-        details: error instanceof Error ? error.message : String(error),
+        // Don't expose error details in production
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders(originToUse),
+          "Content-Type": "application/json",
+          "X-Content-Type-Options": "nosniff",
+        },
       }
     );
   }

@@ -123,7 +123,10 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         );
         setMessages((prev) => [...prev, assistantMessage]);
       } catch (error) {
-        console.error("Image generation error:", error);
+        // Log error for debugging but don't expose details to user
+        if (process.env.NODE_ENV === "development") {
+          console.error("Image generation error:", error);
+        }
         throw error; // Re-throw to be handled by sendMessage's error handler
       }
     },
@@ -150,7 +153,10 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           await handleImageMode(content);
         }
       } catch (error) {
-        console.error("Error sending message:", error);
+        // Log error for debugging but don't expose details to user
+        if (process.env.NODE_ENV === "development") {
+          console.error("Error sending message:", error);
+        }
         setStreamingContent("");
 
         const errorMessage = createErrorMessage(
